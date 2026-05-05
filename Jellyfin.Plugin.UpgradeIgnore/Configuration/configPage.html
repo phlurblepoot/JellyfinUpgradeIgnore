@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upgrade Ignore</title>
+</head>
+<body>
+<div id="UpgradeIgnoreConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-controller="__plugin/upgradeIgnoreConfigPage">
+    <div data-role="content">
+        <div class="content-primary">
+            <form id="UpgradeIgnoreConfigForm">
+                <div class="verticalSection">
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h2 class="sectionTitle">Upgrade Ignore</h2>
+                    </div>
+                    <p class="fieldDescription">
+                        When a library item is replaced shortly after being removed (for example by Sonarr/Radarr
+                        downloading an upgraded copy), this plugin restores the original date so it does not re-appear
+                        in the Recently Added list.
+                    </p>
+                </div>
+
+                <div class="checkboxContainer">
+                    <label>
+                        <input is="emby-checkbox" type="checkbox" id="Enabled" />
+                        <span>Enable upgrade detection</span>
+                    </label>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="UpgradeWindowMinutes">
+                        Upgrade window (minutes)
+                    </label>
+                    <input is="emby-input" type="number" id="UpgradeWindowMinutes" min="1" max="1440" />
+                    <div class="fieldDescription">
+                        How long after a removal a matching add is still considered an upgrade.
+                    </div>
+                </div>
+
+                <div class="checkboxContainer">
+                    <label>
+                        <input is="emby-checkbox" type="checkbox" id="MatchByProviderIds" />
+                        <span>Match by provider IDs (TMDB / IMDB / TVDB)</span>
+                    </label>
+                </div>
+
+                <div class="checkboxContainer">
+                    <label>
+                        <input is="emby-checkbox" type="checkbox" id="MatchByPathFallback" />
+                        <span>Fall back to matching by file path / name when provider IDs are missing</span>
+                    </label>
+                </div>
+
+                <div>
+                    <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                        <span>Save</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        (function () {
+            var pluginId = 'a4d3f7d2-9f1c-4d2a-9b8a-7c2d3e4f5a6b';
+
+            function loadConfig(view) {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                    view.querySelector('#Enabled').checked = config.Enabled;
+                    view.querySelector('#UpgradeWindowMinutes').value = config.UpgradeWindowMinutes;
+                    view.querySelector('#MatchByProviderIds').checked = config.MatchByProviderIds;
+                    view.querySelector('#MatchByPathFallback').checked = config.MatchByPathFallback;
+                    Dashboard.hideLoadingMsg();
+                });
+            }
+
+            document.querySelector('#UpgradeIgnoreConfigPage')
+                .addEventListener('pageshow', function () {
+                    loadConfig(this);
+                });
+
+            document.querySelector('#UpgradeIgnoreConfigForm')
+                .addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    Dashboard.showLoadingMsg();
+                    var view = document.querySelector('#UpgradeIgnoreConfigPage');
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        config.Enabled = view.querySelector('#Enabled').checked;
+                        config.UpgradeWindowMinutes = parseInt(view.querySelector('#UpgradeWindowMinutes').value, 10);
+                        config.MatchByProviderIds = view.querySelector('#MatchByProviderIds').checked;
+                        config.MatchByPathFallback = view.querySelector('#MatchByPathFallback').checked;
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(Dashboard.processPluginConfigurationUpdateResult);
+                    });
+                    return false;
+                });
+        })();
+    </script>
+</div>
+</body>
+</html>
