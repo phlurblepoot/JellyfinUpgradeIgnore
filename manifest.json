@@ -1,0 +1,21 @@
+[
+  {
+    "guid": "a4d3f7d2-9f1c-4d2a-9b8a-7c2d3e4f5a6b",
+    "name": "Upgrade Ignore",
+    "description": "Detects when a media file is replaced shortly after being removed (for example by Sonarr or Radarr downloading an upgraded copy) and preserves the original DateCreated so the item does not re-appear in the Recently Added list.",
+    "overview": "Hide upgraded media from Recently Added.",
+    "owner": "phlurblepoot",
+    "category": "General",
+    "imageUrl": "",
+    "versions": [
+      {
+        "version": "1.0.0.0",
+        "changelog": "Initial release.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/phlurblepoot/jellyfinupgradeignore/claude/jellyfin-upgrade-detection-PvJB8/dist/upgradeignore_1.0.0.0.zip",
+        "checksum": "176cbfda1f479d5d68c26c4f962cbe0c",
+        "timestamp": "2026-05-05T00:00:00Z"
+      }
+    ]
+  }
+]

@@ -1,0 +1,89 @@
+name: Build & publish plugin
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "Jellyfin.Plugin.UpgradeIgnore/**"
+      - ".github/workflows/build.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Read plugin version
+        id: ver
+        run: |
+          v=$(grep -oP '(?<=<Version>)[^<]+' Jellyfin.Plugin.UpgradeIgnore/Jellyfin.Plugin.UpgradeIgnore.csproj)
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: dotnet build Jellyfin.Plugin.UpgradeIgnore/Jellyfin.Plugin.UpgradeIgnore.csproj -c Release
+
+      - name: Package
+        id: pkg
+        run: |
+          mkdir -p dist staging
+          cp Jellyfin.Plugin.UpgradeIgnore/bin/Release/net8.0/Jellyfin.Plugin.UpgradeIgnore.dll staging/
+          zip="dist/upgradeignore_${{ steps.ver.outputs.version }}.zip"
+          (cd staging && zip -j "../$zip" Jellyfin.Plugin.UpgradeIgnore.dll)
+          checksum=$(md5sum "$zip" | awk '{print $1}')
+          echo "checksum=$checksum" >> "$GITHUB_OUTPUT"
+          echo "zip=$zip" >> "$GITHUB_OUTPUT"
+
+      - name: Update manifest
+        env:
+          BRANCH: ${{ github.ref_name }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          CHECKSUM: ${{ steps.pkg.outputs.checksum }}
+          REPO: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import json, os, datetime, urllib.parse
+          version  = os.environ["VERSION"]
+          checksum = os.environ["CHECKSUM"]
+          branch   = os.environ["BRANCH"]
+          repo     = os.environ["REPO"]
+          path     = f"dist/upgradeignore_{version}.zip"
+          url      = f"https://raw.githubusercontent.com/{repo}/{urllib.parse.quote(branch, safe='/')}/{path}"
+          ts       = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+          with open("manifest.json") as f:
+              manifest = json.load(f)
+
+          plugin = manifest[0]
+          plugin["versions"] = [v for v in plugin["versions"] if v["version"] != version]
+          plugin["versions"].insert(0, {
+              "version":   version,
+              "changelog": f"Automated build for {version}.",
+              "targetAbi": "10.10.0.0",
+              "sourceUrl": url,
+              "checksum":  checksum,
+              "timestamp": ts,
+          })
+
+          with open("manifest.json", "w") as f:
+              json.dump(manifest, f, indent=2)
+              f.write("\n")
+          PY
+
+      - name: Commit dist + manifest
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/ manifest.json
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+          else
+            git commit -m "Build ${{ steps.ver.outputs.version }}"
+            git push
+          fi

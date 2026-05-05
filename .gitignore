@@ -6,3 +6,6 @@ obj/
 .idea/
 *.swp
 artifacts/
+# Built plugin zips are intentionally committed under dist/ so the
+# raw GitHub URL can serve as the Jellyfin plugin repository.
+!dist/
