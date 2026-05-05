@@ -10,11 +10,11 @@
     "versions": [
       {
         "version": "1.0.0.0",
-        "changelog": "Initial release.",
+        "changelog": "Automated build for 1.0.0.0.",
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/phlurblepoot/jellyfinupgradeignore/claude/jellyfin-upgrade-detection-PvJB8/dist/upgradeignore_1.0.0.0.zip",
-        "checksum": "176cbfda1f479d5d68c26c4f962cbe0c",
-        "timestamp": "2026-05-05T00:00:00Z"
+        "sourceUrl": "https://raw.githubusercontent.com/phlurblepoot/JellyfinUpgradeIgnore/claude/jellyfin-upgrade-detection-PvJB8/dist/upgradeignore_1.0.0.0.zip",
+        "checksum": "b9f795a322c11f9dfe77c466b5c1e1b9",
+        "timestamp": "2026-05-05T13:13:43Z"
       }
     ]
   }
