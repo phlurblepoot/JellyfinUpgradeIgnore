@@ -1,8 +1,8 @@
 name: "Upgrade Ignore"
 guid: "a4d3f7d2-9f1c-4d2a-9b8a-7c2d3e4f5a6b"
-version: "1.0.0.0"
-targetAbi: "10.10.0.0"
-framework: "net8.0"
+version: "2.0.0.0"
+targetAbi: "12.4.0.0"
+framework: "net10.0"
 overview: "Hide upgraded media from Recently Added."
 description: >-
   Detects when a media file is replaced shortly after being removed (for example
@@ -13,4 +13,4 @@ owner: "phlurblepoot"
 artifacts:
   - "Jellyfin.Plugin.UpgradeIgnore.dll"
 changelog: |-
-  Initial release.
+  Port to Jellyfin 12.4 (net10.0). No behaviour change.
