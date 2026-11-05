@@ -18,7 +18,8 @@ namespace Jellyfin.Plugin.UpgradeIgnore;
 /// <summary>
 /// Listens for library remove/add events and, when an add matches a recently
 /// removed item, copies the original DateCreated forward so the upgraded file
-/// does not appear in Recently Added.
+/// does not appear in Recently Added. On Jellyfin 12.x a movie whose new file arrives
+/// before the old one is removed takes the date from the version it replaces.
 /// </summary>
 public sealed class UpgradeDetectionService : IHostedService, IDisposable
 {
@@ -141,18 +142,34 @@ public sealed class UpgradeDetectionService : IHostedService, IDisposable
             }
         }
 
-        if (match == null)
+        DateTime originalDateCreated;
+        if (match != null)
         {
-            return;
+            originalDateCreated = match.OriginalDateCreated;
+        }
+        else
+        {
+            // Jellyfin 12.x: when a better file is added next to an existing one, the new
+            // file is created as a fresh primary item (new id, new DateCreated) listing the
+            // old file as a local alternate version, and the old movie is demoted instead of
+            // removed. No ItemRemoved fires, so inherit the date of the existing version.
+            // Episodes are not handled here.
+            var existing = FindOldestExistingVersionDate(item);
+            if (existing == null)
+            {
+                return;
+            }
+
+            originalDateCreated = existing.Value;
         }
 
-        if (item.DateCreated <= match.OriginalDateCreated)
+        if (item.DateCreated <= originalDateCreated)
         {
             return;
         }
 
         var previous = item.DateCreated;
-        item.DateCreated = match.OriginalDateCreated;
+        item.DateCreated = originalDateCreated;
 
         _ = Task.Run(async () =>
         {
@@ -169,7 +186,7 @@ public sealed class UpgradeDetectionService : IHostedService, IDisposable
                     "Detected upgrade for '{Name}' ({Kind}); restored DateCreated {Original:o} (was {New:o})",
                     item.Name,
                     item.GetType().Name,
-                    match.OriginalDateCreated,
+                    originalDateCreated,
                     previous);
             }
             catch (Exception ex)
@@ -262,6 +279,82 @@ public sealed class UpgradeDetectionService : IHostedService, IDisposable
         }
 
         return best;
+    }
+
+    /// <summary>
+    /// Returns the oldest DateCreated among the versions of the added movie that were
+    /// already in the library, or null when there are none.
+    /// </summary>
+    /// <remarks>
+    /// Jellyfin 12.x saves the new item, including its link to the old one, before it
+    /// raises ItemAdded, and that save sets PrimaryVersionId on the old row. Library
+    /// queries such as FindByPath then hide the old item as an alternate version, so it
+    /// has to be fetched by id. The old item is demoted only after ItemAdded, so at this
+    /// point its OwnerId is not the added movie. A version that does have that owner was
+    /// created by the same save, which means it is as new as the added movie.
+    /// </remarks>
+    private DateTime? FindOldestExistingVersionDate(BaseItem added)
+    {
+        if (added is not Movie movie)
+        {
+            return null;
+        }
+
+        var alternates = movie.LocalAlternateVersions;
+        if (alternates == null || alternates.Length == 0)
+        {
+            return null;
+        }
+
+        DateTime? oldest = null;
+        try
+        {
+            foreach (var id in GetAlternateVersionIds(movie))
+            {
+                if (id.Equals(movie.Id) ||
+                    _libraryManager.GetItemById(id) is not Movie version ||
+                    version.OwnerId.Equals(movie.Id))
+                {
+                    continue;
+                }
+
+                if (oldest == null || version.DateCreated < oldest.Value)
+                {
+                    oldest = version.DateCreated;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Lookup of existing versions of '{Name}' failed", movie.Name);
+            return null;
+        }
+
+        _logger.LogInformation(
+            "New movie '{Name}' lists {Count} alternate version(s); oldest existing DateCreated is {Oldest:o}",
+            movie.Name,
+            alternates.Length,
+            oldest);
+
+        return oldest;
+    }
+
+    /// <summary>
+    /// Returns the ids of a video's local alternate versions, from the stored links and
+    /// from the id Jellyfin derives for each listed path.
+    /// </summary>
+    private HashSet<Guid> GetAlternateVersionIds(Video video)
+    {
+        var ids = new HashSet<Guid>(_libraryManager.GetLocalAlternateVersionIds(video));
+        foreach (var path in video.LocalAlternateVersions)
+        {
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                ids.Add(_libraryManager.GetNewItemId(path, video.GetType()));
+            }
+        }
+
+        return ids;
     }
 
     private void PruneExpired()
