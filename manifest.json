@@ -9,12 +9,12 @@
     "imageUrl": "",
     "versions": [
       {
-        "version": "2.0.0.0",
-        "changelog": "Port to Jellyfin 12.4 (net10.0). No behaviour change.",
+        "version": "2.0.1.0",
+        "changelog": "Port to Jellyfin 12.4 (net10.0). Keep DateCreated when a new movie file arrives before the old one is removed.",
         "targetAbi": "12.4.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/phlurblepoot/JellyfinUpgradeIgnore/claude/jellyfin-upgrade-detection-PvJB8/dist/upgradeignore_2.0.0.0.zip",
-        "checksum": "4c2d0654a7e8bbeb65bda83dd435d74b",
-        "timestamp": "2026-10-28T14:45:00Z"
+        "sourceUrl": "https://raw.githubusercontent.com/phlurblepoot/JellyfinUpgradeIgnore/claude/jellyfin-upgrade-detection-PvJB8/dist/upgradeignore_2.0.1.0.zip",
+        "checksum": "011e2a2734b6df6de05014420971ccb2",
+        "timestamp": "2026-11-05T18:50:00Z"
       },
       {
         "version": "1.0.0.0",
