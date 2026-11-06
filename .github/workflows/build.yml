@@ -1,11 +1,9 @@
 name: Build & publish plugin
 
+# Manual only. A push must never rebuild the tested release zip or rewrite
+# manifest.json. To build a release, bump the version in the csproj, then run
+# this workflow by hand (Actions tab -> Run workflow) on the branch.
 on:
-  push:
-    branches: ["**"]
-    paths:
-      - "Jellyfin.Plugin.UpgradeIgnore/**"
-      - ".github/workflows/build.yml"
   workflow_dispatch:
 
 jobs:
